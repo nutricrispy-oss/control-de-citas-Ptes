@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Turnos Pro</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#12343B">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--ink:#12343B;--pri:#1F7A6D;--acc:#E3A72F;--bg:#EEF3F1;--card:#fff;--tx:#16282b;--mu:#6a7f84;--ln:#dbe5e2}
+@media(prefers-color-scheme:dark){:root:not([data-t=light]){--bg:#0D1B1E;--card:#15292d;--tx:#e6f0ee;--mu:#8fa6aa;--ln:#25403f}}
+:root[data-t=dark]{--bg:#0D1B1E;--card:#15292d;--tx:#e6f0ee;--mu:#8fa6aa;--ln:#25403f}
+*{box-sizing:border-box;margin:0}html,body{height:100%}
+body{font:16px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+header{background:var(--ink);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 18px 22px;display:flex;gap:12px;align-items:center}
+header img{width:44px;height:44px;border-radius:12px;object-fit:cover;background:#fff}
+header b{font-size:19px;display:block}header small{opacity:.75}
+main{padding:14px;max-width:640px;margin:-12px auto 0}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:16px;padding:14px;margin-bottom:12px}
+h2{font-size:20px;margin:6px 2px 10px}h3{font-size:15px;margin-bottom:8px}
+.t{display:flex;gap:12px;align-items:flex-start}.t.next{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
+.hr{font-size:22px;font-weight:700;min-width:62px;color:var(--pri)}
+.bd{flex:1;min-width:0}.bd b{display:block}.mu{color:var(--mu);font-size:14px}
+.pill{display:inline-block;font-size:12px;font-weight:600;color:#fff;padding:2px 9px;border-radius:99px}
+button,.btn{font:inherit;border:0;border-radius:12px;padding:10px 14px;background:var(--pri);color:#fff;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+button.g{background:transparent;color:var(--pri);border:1.5px solid var(--pri)}button.r{background:#D64545}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.row>*{flex:1;text-align:center;min-width:90px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.kpi div{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:10px 4px;text-align:center}.kpi b{font-size:22px;display:block}.kpi span{font-size:11px;color:var(--mu)}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--ln);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;color:var(--mu);border-radius:0;padding:10px 0;font-size:12px}nav button.on{color:var(--pri)}nav i{font-style:normal;font-size:22px;display:block}
+input,select,textarea{font:inherit;width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--ln);background:var(--bg);color:var(--tx);margin:4px 0 10px}
+label{font-size:13px;color:var(--mu)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal span{font-size:12px;color:var(--mu)}
+.cal button{padding:8px 0;background:var(--bg);color:var(--tx);border-radius:10px;position:relative;font-weight:500}
+.cal button.hoy{outline:2px solid var(--acc)}.cal button.sel{background:var(--pri);color:#fff}
+.cal button.off{background:repeating-linear-gradient(45deg,var(--bg),var(--bg) 4px,var(--ln) 4px,var(--ln) 8px);color:var(--mu)}
+.cal button em{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:9px;font-style:normal;color:var(--acc);font-weight:700}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.mh button{padding:6px 14px}
+#sh{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;z-index:5}#sh.on{display:flex}
+#sh>div{background:var(--card);width:100%;max-height:92%;overflow:auto;border-radius:20px 20px 0 0;padding:18px;max-width:640px;margin:auto}
+#lock{position:fixed;inset:0;background:var(--ink);color:#fff;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+#lock input{width:170px;text-align:center;font-size:24px;letter-spacing:8px}
+#rep{display:none}
+@media print{body>*:not(#rep){display:none!important}#rep{display:block;color:#000;background:#fff;padding:10px}#rep table{width:100%;border-collapse:collapse}#rep td,#rep th{border-bottom:1px solid #999;padding:5px;text-align:left;font-size:12px}}
+</style></head><body>
+<div id="lock"><h2>Ingresá tu PIN</h2><input id="pin" type="password" inputmode="numeric" maxlength="6"><button data-a="unlock">Entrar</button><small id="pe"></small></div>
+<header><img id="lg" alt=""><div><b id="nm"></b><small id="dt"></small></div></header>
+<main id="m"></main>
+<nav><button data-a="v" data-v="hoy"><i>📅</i>Hoy</button><button data-a="v" data-v="agenda"><i>🗓️</i>Agenda</button><button data-a="v" data-v="pac"><i>👤</i>Pacientes</button><button data-a="v" data-v="aj"><i>⚙️</i>Ajustes</button></nav>
+<div id="sh"><div id="shc"></div></div><div id="rep"></div>
+<script>
+const K='turnos-pro-v1',$=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let db;try{db=JSON.parse(localStorage.getItem(K))}catch(e){}
+db=db||{turnos:[],feriados:[],lab:[1,1,1,1,1,0,0],pacs:{},cfg:{nombre:'Mi consultorio',logo:'',tema:'auto',pin:'',msg:'Hola {nombre}, te recordamos tu turno el {fecha} a las {hora}{doctor}. Por favor confirmá tu asistencia. ¡Gracias!'}};
+const save=()=>localStorage.setItem(K,JSON.stringify(db));
+const MES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],DS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const pd=s=>{const[a,b,c]=s.split('-');return new Date(+a,b-1,+c)};
+const dow=d=>(d.getDay()+6)%7;
+const fmt=s=>{const d=pd(s);return DS[dow(d)]+' '+d.getDate()+' de '+MES[d.getMonth()].toLowerCase()};
+const E={pendiente:['Pendiente','#6B7F86'],confirmado:['Confirmado','#1F9D6A'],atendido:['Atendido','#2D6CDF'],cancelado:['Canceló','#D64545'],ausente:['No vino','#C98A0B']};
+const today=()=>iso(new Date());
+let v='hoy',cur=new Date(),sel=today();cur.setDate(1);
+const feri=s=>db.feriados.find(f=>f.f===s);
+const noLab=s=>!db.lab[dow(pd(s))];
+const ofDay=s=>db.turnos.filter(t=>t.fecha===s).sort((a,b)=>a.hora.localeCompare(b.hora));
+const tel=t=>{let d=(t||'').replace(/\D/g,'');if(d.startsWith('0'))d='595'+d.slice(1);return d};
+function msg(t){return db.cfg.msg.replace('{nombre}',t.pac).replace('{fecha}',fmt(t.fecha)).replace('{hora}',t.hora).replace('{doctor}',t.doc?' con '+t.doc:'')}
+function card(t,nx){const c=E[t.estado]||E.pendiente;return `<div class="card t ${nx?'next':''}"><div class="hr">${t.hora}</div><div class="bd"><b>${esc(t.pac)}</b><span class="mu">${esc(t.doc||'Sin doctor/a')}${t.tel?' · '+esc(t.tel):''}</span><br><span class="pill" style="background:${c[1]}">${c[0]}</span>${nx?' <span class="pill" style="background:var(--acc);color:#222">Próximo</span>':''}
+<div class="row"><button class="g" data-a="edit" data-v="${t.id}">Editar</button>${t.tel?`<a class="btn g" href="tel:${esc(t.tel)}" style="background:none">Llamar</a><a class="btn" target="_blank" href="https://wa.me/${tel(t.tel)}?text=${encodeURIComponent(msg(t))}">Recordar</a>`:''}</div></div></div>`}
+function hoy(){const d=today(),l=ofDay(d),n=new Date().toTimeString().slice(0,5),nx=l.find(t=>t.hora>=n&&['pendiente','confirmado'].includes(t.estado));
+const c=k=>l.filter(t=>t.estado===k).length;
+let h=`<div class="kpi"><div><b>${l.length}</b><span>Turnos</span></div><div><b>${c('confirmado')}</b><span>Confirmados</span></div><div><b>${c('atendido')}</b><span>Atendidos</span></div><div><b>${c('ausente')+c('cancelado')}</b><span>Ausentes</span></div></div>`;
+if(feri(d))h+=`<div class="card">🎉 Hoy es feriado: ${esc(feri(d).c)}</div>`;else if(noLab(d))h+=`<div class="card">Hoy no es día laborable.</div>`;
+h+=`<h2>Turnos de hoy</h2>`+(l.length?l.map(t=>card(t,t===nx)).join(''):`<div class="card mu">No hay turnos hoy. Agendá el primero.</div>`);
+return h+`<button data-a="new" data-v="${d}" style="width:100%">+ Nuevo turno</button>`}
+function agenda(){const y=cur.getFullYear(),m=cur.getMonth(),off=dow(cur),n=new Date(y,m+1,0).getDate();
+let g=DS.map(x=>`<span>${x}</span>`).join('')+'<i></i>'.repeat(off);
+for(let i=1;i<=n;i++){const s=iso(new Date(y,m,i)),k=ofDay(s).length;g+=`<button data-a="day" data-v="${s}" class="${s===today()?'hoy ':''}${s===sel?'sel ':''}${feri(s)||noLab(s)?'off':''}">${i}${k?`<em>${k}</em>`:''}</button>`}
+const l=ofDay(sel);
+return `<div class="card"><div class="mh"><button data-a="mes" data-v="-1">‹</button><b>${MES[m]} ${y}</b><button data-a="mes" data-v="1">›</button></div><div class="cal">${g}</div><small class="mu">Las casillas rayadas son feriados o días no laborables.</small></div>
+<h2>${fmt(sel)}</h2>${feri(sel)?`<div class="card">🎉 ${esc(feri(sel).c)}</div>`:''}${l.length?l.map(t=>card(t)).join(''):'<div class="card mu">Sin turnos este día.</div>'}<button data-a="new" data-v="${sel}" style="width:100%">+ Nuevo turno</button>`}
+function pacs(){const q=(window.q||'').toLowerCase(),M={};
+db.turnos.forEach(t=>{const k=tel(t.tel)||t.pac.toLowerCase();(M[k]=M[k]||{k,n:t.pac,tel:t.tel,l:[]}).l.push(t)});
+const L=Object.values(M).filter(p=>(p.n+p.tel).toLowerCase().includes(q)).sort((a,b)=>a.n.localeCompare(b.n));
+return `<h2>Pacientes</h2><input placeholder="Buscar por nombre o teléfono" value="${esc(window.q||'')}" oninput="window.q=this.value;clearTimeout(window.tq);window.tq=setTimeout(()=>{render();const i=document.querySelector('input');i.focus();i.setSelectionRange(99,99)},250)">`+(L.length?L.map(p=>`<div class="card t" data-a="ficha" data-v="${esc(p.k)}"><div class="bd"><b>${esc(p.n)}</b><span class="mu">${esc(p.tel||'Sin teléfono')} · ${p.l.length} turno(s)</span></div></div>`).join(''):'<div class="card mu">Los pacientes aparecen al agendar turnos.</div>')}
+function aj(){const c=db.cfg;return `<h2>Ajustes</h2>
+<div class="card"><h3>Consultorio</h3><label>Nombre</label><input id="a_n" value="${esc(c.nombre)}"><label>Logo</label><input id="a_l" type="file" accept="image/*"><button data-a="saveCfg">Guardar</button></div>
+<div class="card"><h3>Apariencia</h3><select id="a_t"><option value="auto">Automático</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></div>
+<div class="card"><h3>Mensaje de recordatorio</h3><textarea id="a_m" rows="4">${esc(c.msg)}</textarea><small class="mu">Usá {nombre}, {fecha}, {hora} y {doctor}.</small><div class="row"><button data-a="saveCfg">Guardar mensaje</button></div></div>
+<div class="card"><h3>Días laborables</h3><div class="row">${DS.map((d,i)=>`<button class="${db.lab[i]?'':'g'}" data-a="lab" data-v="${i}" style="min-width:60px">${d}</button>`).join('')}</div></div>
+<div class="card"><h3>Feriados y vacaciones</h3>${db.feriados.map((f,i)=>`<div class="mu">${fmt(f.f)} · ${esc(f.c)} <a href="#" data-a="delF" data-v="${i}">quitar</a></div>`).join('')}<div class="row"><input id="f_d" type="date"><input id="f_c" placeholder="Concepto"><button data-a="addF">Agregar</button></div></div>
+<div class="card"><h3>Seguridad</h3><label>PIN de acceso (4 a 6 números)</label><input id="a_p" inputmode="numeric" maxlength="6" placeholder="${c.pin?'PIN activo · escribí uno nuevo':'Sin PIN'}"><div class="row"><button data-a="setPin">Guardar PIN</button>${c.pin?'<button class="g" data-a="noPin">Quitar PIN</button>':''}</div></div>
+<div class="card"><h3>Reportes y compartir</h3><select id="r_r"><option value="hoy">Agenda de hoy</option><option value="dia">Día seleccionado en Agenda</option><option value="mes">Mes visible en Agenda</option></select><div class="row"><button data-a="print">Imprimir PDF</button><button data-a="wa">WhatsApp</button><button data-a="mail">Correo</button></div></div>
+<div class="card"><h3>Copia de seguridad</h3><div class="row"><button data-a="exp">Descargar copia</button><button class="g" onclick="$('#bk').click()">Restaurar</button></div><input id="bk" type="file" accept=".json" hidden><label style="margin-top:10px;display:block">Importar planilla (.xlsm o .xlsx)</label><input id="xl" type="file" accept=".xlsx,.xlsm,.xls"><small class="mu">Trae las hojas Citas y Feriados sin borrar lo que ya cargaste.</small></div>
+<div class="card"><h3>Aplicación</h3><div class="row"><button data-a="inst">Instalar app</button></div></div>`}
+function render(){const V={hoy,agenda,pac:pacs,aj};$('#m').innerHTML=V[v]();document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+if(v==='aj'){$('#a_t').value=db.cfg.tema;$('#a_t').onchange=e=>{db.cfg.tema=e.target.value;save();tema()};$('#bk').onchange=restore;$('#xl').onchange=impXl;$('#a_l').onchange=logo}
+$('#nm').textContent=db.cfg.nombre;$('#lg').src=db.cfg.logo||'icon-192.png';const d=new Date();$('#dt').textContent=fmt(iso(d))+' '+d.getFullYear()}
+const tema=()=>{const t=db.cfg.tema;t==='auto'?document.documentElement.removeAttribute('data-t'):document.documentElement.dataset.t=t};
+const sheet=h=>{$('#shc').innerHTML=h;$('#sh').classList.add('on')},close=()=>$('#sh').classList.remove('on');
+$('#sh').onclick=e=>{if(e.target.id==='sh')close()};
+function form(id,f){const t=id?db.turnos.find(x=>x.id===id):{fecha:f||today(),hora:'09:00',pac:'',tel:'',doc:'',estado:'pendiente',nota:''};
+const docs=[...new Set(db.turnos.map(x=>x.doc).filter(Boolean))];
+sheet(`<h2>${id?'Editar turno':'Nuevo turno'}</h2><label>Día</label><input id="f_f" type="date" value="${t.fecha}"><label>Hora</label><input id="f_h" type="time" value="${t.hora}"><label>Paciente</label><input id="f_p" value="${esc(t.pac)}"><label>Teléfono</label><input id="f_t" type="tel" value="${esc(t.tel)}"><label>Doctor/a de turno</label><input id="f_d" list="dl" value="${esc(t.doc)}"><datalist id="dl">${docs.map(d=>`<option>${esc(d)}`).join('')}</datalist><label>Estado</label><select id="f_e">${Object.entries(E).map(([k,x])=>`<option value="${k}" ${k===t.estado?'selected':''}>${x[0]}</option>`).join('')}</select><label>Nota</label><textarea id="f_n" rows="2">${esc(t.nota)}</textarea>
+<div class="row"><button data-a="sv" data-v="${id||''}">Guardar turno</button>${id?`<button class="r" data-a="del" data-v="${id}">Eliminar</button>`:''}<button class="g" data-a="x">Cancelar</button></div>`)}
+function ficha(k){const l=db.turnos.filter(t=>(tel(t.tel)||t.pac.toLowerCase())===k).sort((a,b)=>b.fecha.localeCompare(a.fecha)),p=l[0];
+sheet(`<h2>${esc(p.pac)}</h2><p class="mu">${esc(p.tel||'Sin teléfono')}</p><label>Notas del paciente</label><textarea id="p_n" rows="3">${esc(db.pacs[k]||'')}</textarea><div class="row"><button data-a="saveP" data-v="${esc(k)}">Guardar nota</button>${p.tel?`<a class="btn g" target="_blank" href="https://wa.me/${tel(p.tel)}">WhatsApp</a>`:''}</div><h3 style="margin-top:14px">Historial</h3>${l.map(t=>`<div class="mu">${fmt(t.fecha)} ${t.hora} · ${E[t.estado][0]}${t.doc?' · '+esc(t.doc):''}</div>`).join('')}`)}
+function listaRep(){const r=$('#r_r').value;let l,tt;if(r==='mes'){const p=iso(cur).slice(0,7);l=db.turnos.filter(t=>t.fecha.startsWith(p));tt='Turnos de '+MES[cur.getMonth()]+' '+cur.getFullYear()}else{const d=r==='hoy'?today():sel;l=ofDay(d);tt='Agenda del '+fmt(d)}
+return{tt,l:l.sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora))}}
+const texto=({tt,l})=>tt+' - '+db.cfg.nombre+'\n\n'+(l.map(t=>`${fmt(t.fecha)} ${t.hora} · ${t.pac}${t.doc?' ('+t.doc+')':''} · ${E[t.estado][0]}`).join('\n')||'Sin turnos');
+const A={v:x=>{v=x;render();scrollTo(0,0)},mes:x=>{cur.setMonth(cur.getMonth()+ +x);render()},day:x=>{sel=x;render()},new:x=>form(null,x),edit:x=>form(x),x:close,ficha,
+saveP:k=>{db.pacs[k]=$('#p_n').value;save();close()},
+sv(id){const t={id:id||Date.now().toString(36),fecha:$('#f_f').value,hora:$('#f_h').value,pac:$('#f_p').value.trim(),tel:$('#f_t').value.trim(),doc:$('#f_d').value.trim(),estado:$('#f_e').value,nota:$('#f_n').value};
+if(!t.fecha||!t.hora||!t.pac)return alert('Completá día, hora y nombre del paciente.');
+if(feri(t.fecha)&&!confirm('Ese día es feriado ('+feri(t.fecha).c+'). ¿Agendar igual?'))return;
+if(!feri(t.fecha)&&noLab(t.fecha)&&!confirm('Ese día no es laborable. ¿Agendar igual?'))return;
+if(db.turnos.some(x=>x.id!==t.id&&x.fecha===t.fecha&&x.hora===t.hora&&x.doc===t.doc&&!['cancelado'].includes(x.estado))&&!confirm('Ya hay un turno a esa hora con el mismo doctor/a. ¿Agendar igual?'))return;
+db.turnos=db.turnos.filter(x=>x.id!==t.id).concat(t);save();close();render()},
+del(id){if(confirm('¿Eliminar este turno?')){db.turnos=db.turnos.filter(x=>x.id!==id);save();close();render()}},
+saveCfg(){const c=db.cfg;if($('#a_n'))c.nombre=$('#a_n').value||c.nombre;if($('#a_m'))c.msg=$('#a_m').value;save();render();alert('Guardado')},
+lab:i=>{db.lab[i]=db.lab[i]?0:1;save();render()},
+addF(){if(!$('#f_d').value)return;db.feriados.push({f:$('#f_d').value,c:$('#f_c').value||'Feriado'});save();render()},
+delF:i=>{db.feriados.splice(i,1);save();render()},
+async setPin(){const p=$('#a_p').value;if(!/^\d{4,6}$/.test(p))return alert('El PIN debe tener de 4 a 6 números.');db.cfg.pin=await sha(p);save();render();alert('PIN guardado')},
+noPin(){db.cfg.pin='';save();render()},
+print(){const r=listaRep();$('#rep').innerHTML=`<h1>${esc(db.cfg.nombre)}</h1><h2>${esc(r.tt)}</h2><p>Total: ${r.l.length} · Atendidos: ${r.l.filter(t=>t.estado==='atendido').length} · Ausentes: ${r.l.filter(t=>t.estado==='ausente').length}</p><table><tr><th>Día</th><th>Hora</th><th>Paciente</th><th>Teléfono</th><th>Doctor/a</th><th>Estado</th></tr>${r.l.map(t=>`<tr><td>${fmt(t.fecha)}</td><td>${t.hora}</td><td>${esc(t.pac)}</td><td>${esc(t.tel)}</td><td>${esc(t.doc)}</td><td>${E[t.estado][0]}</td></tr>`).join('')}</table>`;print()},
+wa(){open('https://wa.me/?text='+encodeURIComponent(texto(listaRep())))},
+mail(){const r=listaRep();location.href='mailto:?subject='+encodeURIComponent(r.tt)+'&body='+encodeURIComponent(texto(r))},
+exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db)],{type:'application/json'}));a.download='turnos-respaldo-'+today()+'.json';a.click();localStorage.setItem(K+'-bk',today())},
+inst(){if(window.ip){ip.prompt()}else alert('Abrí el menú del navegador (⋮) y elegí "Instalar app" o "Agregar a pantalla de inicio".')},
+unlock:async()=>{if(await sha($('#pin').value)===db.cfg.pin)$('#lock').style.display='none';else $('#pe').textContent='PIN incorrecto'}};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.tagName==='A'&&t.getAttribute('href')&&t.getAttribute('href')!=='#')return;e.preventDefault();A[t.dataset.a]?.(t.dataset.v)});
+async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function restore(e){const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.turnos)throw 0;if(confirm('Esto reemplaza los datos actuales. ¿Continuar?')){db=d;save();tema();render()}}catch(x){alert('El archivo no es una copia válida.')}})}
+function logo(e){const f=e.target.files[0];if(!f)return;const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=c.height=192;const x=c.getContext('2d'),s=Math.min(i.width,i.height);x.drawImage(i,(i.width-s)/2,(i.height-s)/2,s,s,0,0,192,192);db.cfg.logo=c.toDataURL('image/jpeg',.85);save();render()};i.src=URL.createObjectURL(f)}
+async function impXl(e){const f=e.target.files[0];if(!f)return;
+if(!window.XLSX)await new Promise((r,j)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=r;s.onerror=()=>{alert('Para importar necesitás conexión a internet.');j()};document.head.appendChild(s)}).catch(()=>0);
+if(!window.XLSX)return;const wb=XLSX.read(await f.arrayBuffer());
+const D=n=>typeof n==='number'?iso(new Date(Math.round((n-25569)*864e5)+6e4*new Date().getTimezoneOffset())):'';
+const rows=n=>wb.Sheets[n]?XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,range:6}):[];
+let a=0,b=0;rows('Citas').forEach(r=>{const[,d,h,p,t,dc]=r;if(!d||!p)return;const fe=D(d),hr=typeof h==='number'?String(Math.floor(Math.round(h*1440)/60)).padStart(2,'0')+':'+String(Math.round(h*1440)%60).padStart(2,'0'):'09:00';
+if(!fe||db.turnos.some(x=>x.fecha===fe&&x.hora===hr&&x.pac===String(p)))return;db.turnos.push({id:Date.now().toString(36)+a,fecha:fe,hora:hr,pac:String(p),tel:String(t||''),doc:String(dc||''),estado:'pendiente',nota:''});a++});
+rows('Feriados').forEach(r=>{const fe=D(r[1]);if(fe&&!feri(fe)){db.feriados.push({f:fe,c:String(r[2]||'Feriado')});b++}});
+save();render();alert(`Importado: ${a} turnos y ${b} feriados.`)}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.ip=e});
+tema();render();if(db.cfg.pin){$('#lock').style.display='flex'}
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+if(db.turnos.length&&localStorage.getItem(K+'-bk')!==today()&&new Date().getDay()===1&&!sessionStorage.n){sessionStorage.n=1;setTimeout(()=>confirm('Es lunes: ¿descargás una copia de seguridad?')&&A.exp(),1500)}
+</script></body></html>
