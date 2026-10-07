@@ -65,6 +65,10 @@ let v='hoy',cur=new Date(),sel=today();cur.setDate(1);
 const feri=s=>db.feriados.find(f=>f.f===s);
 const noLab=s=>!db.lab[dow(pd(s))];
 const ofDay=s=>db.turnos.filter(t=>t.fecha===s).sort((a,b)=>a.hora.localeCompare(b.hora));
+const dm=s=>s?s.split('-').reverse().join('/'):'';
+const di=x=>{const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(x.trim());if(!m)return'';const d=new Date(+m[3],m[2]-1,+m[1]);return d.getDate()==+m[1]&&d.getMonth()==m[2]-1?iso(d):''};
+const hr=x=>{const m=/^(\d{1,2}):(\d{2})$/.exec(x.trim());return m&&+m[1]<24&&+m[2]<60?m[1].padStart(2,'0')+':'+m[2]:''};
+function mk(el,k){const d=el.value.replace(/\D/g,'');el.value=k==='d'?d.slice(0,2)+(d.length>2?'/'+d.slice(2,4):'')+(d.length>4?'/'+d.slice(4,8):''):d.slice(0,2)+(d.length>2?':'+d.slice(2,4):'')}
 const tel=t=>{let d=(t||'').replace(/\D/g,'');if(d.startsWith('0'))d='595'+d.slice(1);return d};
 function msg(t){return db.cfg.msg.replace('{nombre}',t.pac).replace('{fecha}',fmt(t.fecha)).replace('{hora}',t.hora).replace('{doctor}',t.doc?' con '+t.doc:'')}
 function card(t,nx){const c=E[t.estado]||E.pendiente;return `<div class="card t ${nx?'next':''}"><div class="hr">${t.hora}</div><div class="bd"><b>${esc(t.pac)}</b><span class="mu">${esc(t.doc||'Sin doctor/a')}${t.tel?' · '+esc(t.tel):''}</span><br><span class="pill" style="background:${c[1]}">${c[0]}</span>${nx?' <span class="pill" style="background:var(--acc);color:#222">Próximo</span>':''}
@@ -90,7 +94,7 @@ function aj(){const c=db.cfg;return `<h2>Ajustes</h2>
 <div class="card"><h3>Apariencia</h3><select id="a_t"><option value="auto">Automático</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></div>
 <div class="card"><h3>Mensaje de recordatorio</h3><textarea id="a_m" rows="4">${esc(c.msg)}</textarea><small class="mu">Usá {nombre}, {fecha}, {hora} y {doctor}.</small><div class="row"><button data-a="saveCfg">Guardar mensaje</button></div></div>
 <div class="card"><h3>Días laborables</h3><div class="row">${DS.map((d,i)=>`<button class="${db.lab[i]?'':'g'}" data-a="lab" data-v="${i}" style="min-width:60px">${d}</button>`).join('')}</div></div>
-<div class="card"><h3>Feriados y vacaciones</h3>${db.feriados.map((f,i)=>`<div class="mu">${fmt(f.f)} · ${esc(f.c)} <a href="#" data-a="delF" data-v="${i}">quitar</a></div>`).join('')}<div class="row"><input id="f_d" type="date"><input id="f_c" placeholder="Concepto"><button data-a="addF">Agregar</button></div></div>
+<div class="card"><h3>Feriados y vacaciones</h3>${db.feriados.map((f,i)=>`<div class="mu">${fmt(f.f)} · ${esc(f.c)} <a href="#" data-a="delF" data-v="${i}">quitar</a></div>`).join('')}<div class="row"><input id="f_d" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" oninput="mk(this,'d')"><input id="f_c" placeholder="Concepto"><button data-a="addF">Agregar</button></div></div>
 <div class="card"><h3>Seguridad</h3><label>PIN de acceso (4 a 6 números)</label><input id="a_p" inputmode="numeric" maxlength="6" placeholder="${c.pin?'PIN activo · escribí uno nuevo':'Sin PIN'}"><div class="row"><button data-a="setPin">Guardar PIN</button>${c.pin?'<button class="g" data-a="noPin">Quitar PIN</button>':''}</div></div>
 <div class="card"><h3>Reportes y compartir</h3><select id="r_r"><option value="hoy">Agenda de hoy</option><option value="dia">Día seleccionado en Agenda</option><option value="mes">Mes visible en Agenda</option></select><div class="row"><button data-a="print">Imprimir PDF</button><button data-a="wa">WhatsApp</button><button data-a="mail">Correo</button></div></div>
 <div class="card"><h3>Copia de seguridad</h3><div class="row"><button data-a="exp">Descargar copia</button><button class="g" onclick="$('#bk').click()">Restaurar</button></div><input id="bk" type="file" accept=".json" hidden><label style="margin-top:10px;display:block">Importar planilla (.xlsm o .xlsx)</label><input id="xl" type="file" accept=".xlsx,.xlsm,.xls"><small class="mu">Trae las hojas Citas y Feriados sin borrar lo que ya cargaste.</small></div>
@@ -103,7 +107,7 @@ const sheet=h=>{$('#shc').innerHTML=h;$('#sh').classList.add('on')},close=()=>$(
 $('#sh').onclick=e=>{if(e.target.id==='sh')close()};
 function form(id,f){const t=id?db.turnos.find(x=>x.id===id):{fecha:f||today(),hora:'09:00',pac:'',tel:'',doc:'',estado:'pendiente',nota:''};
 const docs=[...new Set(db.turnos.map(x=>x.doc).filter(Boolean))];
-sheet(`<h2>${id?'Editar turno':'Nuevo turno'}</h2><label>Día</label><input id="f_f" type="date" value="${t.fecha}"><label>Hora</label><input id="f_h" type="time" value="${t.hora}"><label>Paciente</label><input id="f_p" value="${esc(t.pac)}"><label>Teléfono</label><input id="f_t" type="tel" value="${esc(t.tel)}"><label>Doctor/a de turno</label><input id="f_d" list="dl" value="${esc(t.doc)}"><datalist id="dl">${docs.map(d=>`<option>${esc(d)}`).join('')}</datalist><label>Estado</label><select id="f_e">${Object.entries(E).map(([k,x])=>`<option value="${k}" ${k===t.estado?'selected':''}>${x[0]}</option>`).join('')}</select><label>Nota</label><textarea id="f_n" rows="2">${esc(t.nota)}</textarea>
+sheet(`<h2>${id?'Editar turno':'Nuevo turno'}</h2><label>Día</label><input id="f_f" inputmode="numeric" placeholder="dd/mm/aaaa" maxlength="10" oninput="mk(this,'d')" value="${dm(t.fecha)}"><label>Hora</label><input id="f_h" inputmode="numeric" placeholder="hh:mm" maxlength="5" oninput="mk(this,'h')" value="${t.hora}"><label>Paciente</label><input id="f_p" value="${esc(t.pac)}"><label>Teléfono</label><input id="f_t" type="tel" value="${esc(t.tel)}"><label>Doctor/a de turno</label><input id="f_d" list="dl" value="${esc(t.doc)}"><datalist id="dl">${docs.map(d=>`<option>${esc(d)}`).join('')}</datalist><label>Estado</label><select id="f_e">${Object.entries(E).map(([k,x])=>`<option value="${k}" ${k===t.estado?'selected':''}>${x[0]}</option>`).join('')}</select><label>Nota</label><textarea id="f_n" rows="2">${esc(t.nota)}</textarea>
 <div class="row"><button data-a="sv" data-v="${id||''}">Guardar turno</button>${id?`<button class="r" data-a="del" data-v="${id}">Eliminar</button>`:''}<button class="g" data-a="x">Cancelar</button></div>`)}
 function ficha(k){const l=db.turnos.filter(t=>(tel(t.tel)||t.pac.toLowerCase())===k).sort((a,b)=>b.fecha.localeCompare(a.fecha)),p=l[0];
 sheet(`<h2>${esc(p.pac)}</h2><p class="mu">${esc(p.tel||'Sin teléfono')}</p><label>Notas del paciente</label><textarea id="p_n" rows="3">${esc(db.pacs[k]||'')}</textarea><div class="row"><button data-a="saveP" data-v="${esc(k)}">Guardar nota</button>${p.tel?`<a class="btn g" target="_blank" href="https://wa.me/${tel(p.tel)}">WhatsApp</a>`:''}</div><h3 style="margin-top:14px">Historial</h3>${l.map(t=>`<div class="mu">${fmt(t.fecha)} ${t.hora} · ${E[t.estado][0]}${t.doc?' · '+esc(t.doc):''}</div>`).join('')}`)}
@@ -112,8 +116,8 @@ return{tt,l:l.sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora))}}
 const texto=({tt,l})=>tt+' - '+db.cfg.nombre+'\n\n'+(l.map(t=>`${fmt(t.fecha)} ${t.hora} · ${t.pac}${t.doc?' ('+t.doc+')':''} · ${E[t.estado][0]}`).join('\n')||'Sin turnos');
 const A={v:x=>{v=x;render();scrollTo(0,0)},mes:x=>{cur.setMonth(cur.getMonth()+ +x);render()},day:x=>{sel=x;render()},new:x=>form(null,x),edit:x=>form(x),x:close,ficha,
 saveP:k=>{db.pacs[k]=$('#p_n').value;save();close()},
-sv(id){const t={id:id||Date.now().toString(36),fecha:$('#f_f').value,hora:$('#f_h').value,pac:$('#f_p').value.trim(),tel:$('#f_t').value.trim(),doc:$('#f_d').value.trim(),estado:$('#f_e').value,nota:$('#f_n').value};
-if(!t.fecha||!t.hora||!t.pac)return alert('Completá día, hora y nombre del paciente.');
+sv(id){const t={id:id||Date.now().toString(36),fecha:di($('#f_f').value),hora:hr($('#f_h').value),pac:$('#f_p').value.trim(),tel:$('#f_t').value.trim(),doc:$('#f_d').value.trim(),estado:$('#f_e').value,nota:$('#f_n').value};
+if(!t.fecha||!t.hora||!t.pac)return alert('Revisá el día (dd/mm/aaaa), la hora (hh:mm) y el nombre del paciente.');
 if(feri(t.fecha)&&!confirm('Ese día es feriado ('+feri(t.fecha).c+'). ¿Agendar igual?'))return;
 if(!feri(t.fecha)&&noLab(t.fecha)&&!confirm('Ese día no es laborable. ¿Agendar igual?'))return;
 if(db.turnos.some(x=>x.id!==t.id&&x.fecha===t.fecha&&x.hora===t.hora&&x.doc===t.doc&&!['cancelado'].includes(x.estado))&&!confirm('Ya hay un turno a esa hora con el mismo doctor/a. ¿Agendar igual?'))return;
@@ -121,7 +125,7 @@ db.turnos=db.turnos.filter(x=>x.id!==t.id).concat(t);save();close();render()},
 del(id){if(confirm('¿Eliminar este turno?')){db.turnos=db.turnos.filter(x=>x.id!==id);save();close();render()}},
 saveCfg(){const c=db.cfg;if($('#a_n'))c.nombre=$('#a_n').value||c.nombre;if($('#a_m'))c.msg=$('#a_m').value;save();render();alert('Guardado')},
 lab:i=>{db.lab[i]=db.lab[i]?0:1;save();render()},
-addF(){if(!$('#f_d').value)return;db.feriados.push({f:$('#f_d').value,c:$('#f_c').value||'Feriado'});save();render()},
+addF(){if(!di($('#f_d').value))return alert('Escribí la fecha como dd/mm/aaaa.');db.feriados.push({f:di($('#f_d').value),c:$('#f_c').value||'Feriado'});save();render()},
 delF:i=>{db.feriados.splice(i,1);save();render()},
 async setPin(){const p=$('#a_p').value;if(!/^\d{4,6}$/.test(p))return alert('El PIN debe tener de 4 a 6 números.');db.cfg.pin=await sha(p);save();render();alert('PIN guardado')},
 noPin(){db.cfg.pin='';save();render()},
